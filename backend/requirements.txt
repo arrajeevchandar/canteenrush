@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+alembic
+python-multipart
+passlib[bcrypt]
+pyjwt
+scikit-learn
+pandas
+numpy
