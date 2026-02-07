@@ -4,19 +4,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchOrders } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { QRCodeSVG } from 'qrcode.react';
 import {
-    ShoppingBag,
+    Package,
     Clock,
-    CheckCircle,
-    Loader2,
+    CheckCircle2,
+    Timer,
+    ArrowLeft,
+    QrCode,
     Ticket,
+    Utensils,
     ChefHat,
-    Bell,
-    ArrowRight,
-    Star,
-    Coffee
+    ChevronRight,
+    Loader2
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import Link from 'next/link';
 
 interface Order {
     id: number;
@@ -25,9 +27,7 @@ interface Order {
     created_at: string;
     predicted_pickup_time: string;
     vendor_id: number;
-    token_number: number;
-    queue_position?: number;
-    items?: any[];
+    token_number?: number;
 }
 
 export default function OrdersPage() {
@@ -45,6 +45,7 @@ export default function OrdersPage() {
         async function loadOrders() {
             try {
                 const data = await fetchOrders();
+                // Sort by ID descending (newest first)
                 setOrders(data.sort((a: Order, b: Order) => b.id - a.id));
             } catch (e) {
                 console.error(e);
@@ -55,166 +56,186 @@ export default function OrdersPage() {
 
         if (user) {
             loadOrders();
-            const interval = setInterval(loadOrders, 5000);
+            // Poll for updates every 10 seconds
+            const interval = setInterval(loadOrders, 10000);
             return () => clearInterval(interval);
         }
     }, [user, authLoading, router]);
 
+    const getStatusStyles = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'ready':
+                return {
+                    bg: 'bg-emerald-500',
+                    text: 'text-emerald-500',
+                    light: 'bg-emerald-50',
+                    icon: <CheckCircle2 className="w-4 h-4" />,
+                    label: 'Ready for Pickup 😋',
+                    glow: 'shadow-emerald-200'
+                };
+            case 'preparing':
+                return {
+                    bg: 'bg-amber-500',
+                    text: 'text-amber-500',
+                    light: 'bg-amber-50',
+                    icon: <Timer className="w-4 h-4 animate-spin-slow" />,
+                    label: 'Cooking Now 🔥',
+                    glow: 'shadow-amber-200'
+                };
+            case 'completed':
+                return {
+                    bg: 'bg-gray-500',
+                    text: 'text-gray-500',
+                    light: 'bg-gray-100',
+                    icon: <Package className="w-4 h-4" />,
+                    label: 'Delivered ✅',
+                    glow: 'shadow-gray-200'
+                };
+            default:
+                return {
+                    bg: 'bg-indigo-500',
+                    text: 'text-indigo-500',
+                    light: 'bg-indigo-50',
+                    icon: <Clock className="w-4 h-4" />,
+                    label: 'Order Placed 📑',
+                    glow: 'shadow-indigo-200'
+                };
+        }
+    };
+
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
-                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-indigo-600 font-black animate-pulse uppercase tracking-widest text-sm">Locating Your Orders... 🍔</p>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-indigo-50/30">
+                <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
+                <p className="text-gray-500 font-black uppercase tracking-widest text-xs">Tracking your tickets...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto space-y-12 animate-fade-in-up">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50/50 via-white to-sky-50/50 pb-20">
+            <div className="max-w-4xl mx-auto px-6 pt-12 space-y-12 animate-fade-in-up">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-100 text-white">
-                                <Ticket className="w-8 h-8" />
-                            </div>
-                            <h1 className="text-5xl font-black text-gray-900 tracking-tighter">Your <span className="text-indigo-600">Orders</span></h1>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="space-y-2 text-center sm:text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 font-black text-[10px] uppercase tracking-widest">
+                            <Ticket className="w-3 h-3" />
+                            Live Tickets
                         </div>
-                        <p className="text-gray-500 font-bold ml-1">Track your meals in real-time. No more waiting in lines! ⏰</p>
+                        <h1 className="text-5xl font-black text-gray-900 tracking-tighter">
+                            My <span className="text-indigo-600">Orders</span>
+                        </h1>
+                        <p className="text-gray-500 font-bold">Real-time status of your delicious treats! 🎫</p>
                     </div>
+
+                    <Link
+                        href="/menu"
+                        className="group inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-2xl text-indigo-600 font-black text-sm transition-all active:scale-95"
+                    >
+                        Order More
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                 </div>
 
-                {orders.length === 0 ? (
-                    <div className="py-24 text-center glass-card rounded-[3rem] border-2 border-dashed border-indigo-100 flex flex-col items-center gap-6 animate-fade-in-up">
-                        <div className="p-8 bg-indigo-50 rounded-full">
-                            <Coffee className="w-16 h-16 text-indigo-200" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-gray-900">Your tray is empty! 😴</h3>
-                            <p className="text-gray-500 font-medium">Ready for something delicious? Head back to the menu!</p>
-                        </div>
-                        <button
-                            onClick={() => router.push('/menu')}
-                            className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-100 flex items-center gap-3 border-b-4 border-indigo-900"
-                        >
-                            Browse Menu
-                            <ArrowRight className="w-6 h-6" />
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                        {orders.map((order) => (
-                            <div key={order.id} className="group relative flex flex-col animate-fade-in-up">
-                                {/* Ticket Design Top */}
-                                <div className={`relative px-8 py-6 rounded-t-[2.5rem] border-x border-t border-white/50 shadow-2xl overflow-hidden
-                                    ${order.status === 'ready' ? 'bg-emerald-500 text-white' :
-                                        order.status === 'preparing' ? 'bg-indigo-600 text-white' :
-                                            'bg-amber-500 text-white'}`}>
+                {/* Orders List */}
+                <div className="grid grid-cols-1 gap-8">
+                    {orders.length > 0 ? (
+                        orders.map((order) => {
+                            const styles = getStatusStyles(order.status);
+                            const orderDate = new Date(order.created_at);
+                            const pickupTime = new Date(order.predicted_pickup_time);
 
-                                    {/* Design Elements */}
-                                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-                                    <div className="absolute -bottom-6 -left-6 w-20 h-20 bg-black/5 rounded-full blur-xl"></div>
-
-                                    <div className="relative flex justify-between items-start">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-1 flex items-center gap-2">
-                                                <Star className="w-3 h-3 fill-current" />
-                                                Order ID
-                                            </p>
-                                            <h3 className="text-2xl font-black tracking-tight">#{order.id}</h3>
-                                        </div>
-                                        <div className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
-                                            {order.status === 'ready' && <CheckCircle className="w-4 h-4" />}
-                                            {order.status === 'ordered' && <Bell className="w-4 h-4" />}
-                                            {order.status === 'preparing' && <ChefHat className="w-4 h-4 animate-bounce" />}
-                                            {order.status}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Ticket Body */}
-                                <div className="p-8 bg-white rounded-b-[2.5rem] border-x border-b border-white shadow-2xl space-y-8 flex-1 flex flex-col relative z-10 transition-transform group-hover:scale-[1.01]">
-                                    {/* Perforation Effect */}
-                                    <div className="absolute -top-3 left-0 right-0 flex justify-between px-4 overflow-hidden pointer-events-none">
-                                        {[...Array(20)].map((_, i) => (
-                                            <div key={i} className="w-2 h-2 bg-white rounded-full translate-y-2 shadow-inner"></div>
-                                        ))}
-                                    </div>
-
-                                    {/* QR Code Section */}
-                                    <div className="flex flex-col items-center bg-gray-50/50 p-6 rounded-3xl border border-dashed border-indigo-100 hover:bg-white transition-colors">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Your Pickup Token 🎫</p>
-                                        <div className="text-6xl font-black text-indigo-600 font-mono tracking-tighter mb-6 select-none">
-                                            {order.token_number}
-                                        </div>
-                                        <div className="bg-white p-4 rounded-3xl shadow-lg border border-indigo-50 hover:scale-110 transition-transform cursor-zoom-in">
-                                            <QRCodeSVG value={JSON.stringify({ id: order.id, token: order.token_number })} size={140} fgColor="#4f46e5" />
-                                        </div>
-                                        <p className="text-[10px] font-black text-indigo-300 mt-6 animate-pulse uppercase tracking-[0.2em]">Scan at counter 📱</p>
-                                    </div>
-
-                                    {/* Queue Position */}
-                                    {order.status !== 'ready' && order.status !== 'completed' && (
-                                        <div className="text-center p-4 bg-indigo-50 rounded-2xl border border-indigo-100/50">
-                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Queue Status 🚶‍♂️</p>
-                                            <div className="flex items-center justify-center gap-2">
-                                                <div className="flex h-3 w-3 relative">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600 shadow-sm shadow-indigo-200"></span>
+                            return (
+                                <div key={order.id} className="relative group overflow-hidden">
+                                    <div className="glass-card rounded-[3rem] p-8 md:p-10 border border-white flex flex-col md:flex-row gap-10 shadow-2xl hover-glow transition-all group-hover:scale-[1.01]">
+                                        {/* Ticket Stub (QR Code) */}
+                                        <div className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border-2 border-indigo-50 shadow-inner group-hover:rotate-1 transition-transform">
+                                            <div className="relative">
+                                                <QRCodeSVG
+                                                    value={JSON.stringify({ id: order.id, token: order.token_number })}
+                                                    size={120}
+                                                    includeMargin={true}
+                                                    className="rounded-lg"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-[2px]">
+                                                    <QrCode className="w-8 h-8 text-indigo-600" />
                                                 </div>
-                                                <span className="text-2xl font-black text-gray-900 tracking-tighter">
-                                                    {order.queue_position ? `#${order.queue_position}` : 'IN LINE'}
-                                                </span>
+                                            </div>
+                                            <div className="mt-4 text-center">
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Security Token</span>
+                                                <div className="text-2xl font-black text-indigo-600 leading-none mt-1">
+                                                    {order.token_number || order.id.toString().padStart(4, '0')}
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
 
-                                    {/* Items List */}
-                                    <div className="space-y-4 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <ShoppingBag className="w-4 h-4 text-gray-300" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order Details 📝</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {order.items && order.items.length > 0 ? (
-                                                order.items.map((item, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center group/item transition-all">
-                                                        <span className="text-sm font-black text-gray-700">{item.menu_item ? item.menu_item.name : 'Item'}</span>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-20 h-px bg-gray-100 group-hover/item:bg-indigo-100 transition-colors"></div>
-                                                            <span className="bg-gray-100 px-2 py-0.5 rounded-lg text-[10px] font-black text-indigo-600">x{item.quantity}</span>
-                                                        </div>
+                                        {/* Ticket Details */}
+                                        <div className="flex-1 space-y-8">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter">Order #{order.id}</h3>
+                                                        <span className="text-gray-300 font-black">/</span>
+                                                        <span className="text-lg font-black text-emerald-500">${order.total_price.toFixed(2)}</span>
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-sm text-gray-300 italic font-medium">
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                    Fetching items...
+                                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                        Ordered <span className="text-gray-900">{orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </p>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {/* Ticket Footer */}
-                                    <div className="pt-6 border-t border-gray-100 flex justify-between items-center">
-                                        <div className="space-y-0.5">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Paid 💸</p>
-                                            <p className="text-2xl font-black text-gray-900 tracking-tighter">${order.total_price.toFixed(2)}</p>
-                                        </div>
-                                        <div className="text-right space-y-0.5">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Estimated Pickup ⏲️</p>
-                                            <div className="flex items-center justify-end gap-1.5 font-black text-gray-900 italic tracking-tight">
-                                                <Clock className="w-4 h-4 text-gray-400" />
-                                                {new Date(order.predicted_pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-3xl ${styles.light} border-2 border-white shadow-sm shadow-indigo-100`}>
+                                                    <div className={`p-2 ${styles.bg} rounded-xl text-white shadow-lg ${styles.glow}`}>
+                                                        {styles.icon}
+                                                    </div>
+                                                    <span className={`font-black text-sm uppercase tracking-wider ${styles.text}`}>
+                                                        {styles.label}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-6 bg-white/40 rounded-[2rem] border border-white space-y-1">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        Est. Pickup
+                                                    </span>
+                                                    <div className="text-xl font-black text-gray-900 italic">
+                                                        {pickupTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                                <div className="p-6 bg-white/40 rounded-[2rem] border border-white space-y-1 flex flex-col items-center justify-center">
+                                                    <ChefHat className="w-6 h-6 text-gray-200" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Decorative Ticket Perforations */}
+                                    <div className="hidden md:block absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 bg-indigo-50 border border-white rounded-full shadow-inner"></div>
+                                    <div className="hidden md:block absolute top-1/2 -right-4 -translate-y-1/2 w-8 h-8 bg-indigo-50 border border-white rounded-full shadow-inner"></div>
                                 </div>
+                            );
+                        })
+                    ) : (
+                        <div className="text-center py-24 glass-card rounded-[4rem] border border-white shadow-xl space-y-6">
+                            <div className="relative inline-block">
+                                <Utensils className="w-24 h-24 text-indigo-100 mx-auto" />
+                                <div className="absolute top-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-black text-sm animate-bounce">?</div>
                             </div>
-                        ))}
-                    </div>
-                )}
+                            <div className="space-y-2">
+                                <h3 className="text-3xl font-black text-gray-900 tracking-tighter">No orders yet</h3>
+                                <p className="text-gray-500 font-bold max-w-sm mx-auto">Hungry? Your next great meal is just a few clicks away on the menu!</p>
+                            </div>
+                            <Link
+                                href="/menu"
+                                className="inline-flex items-center gap-3 px-10 py-5 bg-indigo-600 text-white rounded-[2rem] font-black tracking-widest uppercase text-xs shadow-2xl shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all"
+                            >
+                                Browse Menu 🍔
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

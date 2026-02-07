@@ -1,4 +1,4 @@
-export const API_URL = 'http://127.0.0.1:8000/api';
+export const API_URL = 'http://localhost:8000/api';
 
 function getHeaders() {
     const token = localStorage.getItem('token');
@@ -8,73 +8,91 @@ function getHeaders() {
     };
 }
 
-async function handleRequest(url: string, options: RequestInit = {}) {
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            ...getHeaders(),
-            ...options.headers,
-        },
+export async function fetchMenu() {
+    const res = await fetch(`${API_URL}/menu/`, {
+        headers: getHeaders(),
     });
-
-    if (res.status === 401) {
-        // Token expired or invalid
-        localStorage.clear();
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
-    }
-
     if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'API request failed');
+        throw new Error('Failed to fetch menu');
     }
-
     return res.json();
 }
 
-export async function fetchMenu() {
-    return handleRequest(`${API_URL}/menu/`);
-}
-
 export async function createOrder(items: number[], vendorId: number) {
-    return handleRequest(`${API_URL}/orders/`, {
+    const res = await fetch(`${API_URL}/orders/`, {
         method: 'POST',
+        headers: getHeaders(),
         body: JSON.stringify({ items, vendor_id: vendorId }),
     });
+    if (!res.ok) {
+        throw new Error('Failed to create order');
+    }
+    return res.json();
 }
 
 export async function fetchOrders() {
-    return handleRequest(`${API_URL}/orders/`);
+    const res = await fetch(`${API_URL}/orders/`, {
+        headers: getHeaders(),
+    });
+    if (!res.ok) {
+        throw new Error('Failed to fetch orders');
+    }
+    return res.json();
 }
 
 export async function predictTime(items: number[], vendorId: number) {
-    return handleRequest(`${API_URL}/predict/`, {
+    const res = await fetch(`${API_URL}/predict/`, {
         method: 'POST',
+        headers: getHeaders(),
         body: JSON.stringify({ items, vendor_id: vendorId }),
     });
+    if (!res.ok) {
+        throw new Error('Failed to predict time');
+    }
+    return res.json();
 }
 
-export async function createMenuItem(item: { name: string; price: number; description: string; prep_time_estimate: number }) {
-    return handleRequest(`${API_URL}/menu/`, {
+export async function createMenuItem(item: { name: string; price: number; description: string; prep_time_estimate: number; image_url?: string }) {
+    const res = await fetch(`${API_URL}/menu/`, {
         method: 'POST',
+        headers: getHeaders(),
         body: JSON.stringify(item),
     });
+    if (!res.ok) {
+        throw new Error('Failed to create menu item');
+    }
+    return res.json();
 }
 
 export async function updateOrderStatus(orderId: number, status: string) {
-    return handleRequest(`${API_URL}/orders/${orderId}/status`, {
+    const res = await fetch(`${API_URL}/orders/${orderId}/status?status=${status}`, {
         method: 'PUT',
-        body: JSON.stringify({ status }),
+        headers: getHeaders(),
     });
+    if (!res.ok) {
+        throw new Error('Failed to update order status');
+    }
+    return res.json();
 }
 
-export async function updateMenuItem(itemId: number, update: any) {
-    return handleRequest(`${API_URL}/menu/${itemId}`, {
+export async function updateMenuItem(itemId: number, data: any) {
+    const res = await fetch(`${API_URL}/menu/${itemId}`, {
         method: 'PUT',
-        body: JSON.stringify(update),
+        headers: getHeaders(),
+        body: JSON.stringify(data),
     });
+    if (!res.ok) {
+        throw new Error('Failed to update menu item');
+    }
+    return res.json();
 }
 
 export async function fetchOrderByToken(token: number) {
-    return handleRequest(`${API_URL}/orders/by-token/${token}`);
+    const res = await fetch(`${API_URL}/orders/token/${token}`, {
+        headers: getHeaders(),
+    });
+    if (!res.ok) {
+        throw new Error('Order not found');
+    }
+    return res.json();
 }

@@ -21,6 +21,7 @@ class MenuItemBase(BaseModel):
     price: float
     description: Optional[str] = None
     prep_time_estimate: int # minutes
+    image_url: Optional[str] = "https://placehold.co/400x300?text=Food"
 
 class MenuItemCreate(MenuItemBase):
     pass
@@ -31,6 +32,7 @@ class MenuItemUpdate(BaseModel):
     description: Optional[str] = None
     prep_time_estimate: Optional[int] = None
     is_available: Optional[bool] = None
+    image_url: Optional[str] = None
 
 class MenuItem(MenuItemBase):
     id: int
@@ -39,6 +41,7 @@ class MenuItem(MenuItemBase):
     is_available: bool
     # To show vendor name, you might need a separate field or a nested Owner schema
     # simpler to just fetch it or include it if we do a join
+    image_url: Optional[str] = None
     
     class Config:
         orm_mode = True
@@ -50,27 +53,13 @@ class OrderBase(BaseModel):
 class OrderCreate(OrderBase):
     pass
 
-class OrderStatusUpdate(BaseModel):
-    status: str
-
-class OrderItem(BaseModel):
-    menu_item_id: int
-    quantity: int
-    menu_item: MenuItem  # Nested schema to show item details
-    
-    class Config:
-        orm_mode = True
-
 class Order(BaseModel):
     id: int
     user_id: int
     status: str
     total_price: float
-    token_number: int
-    queue_position: Optional[int] = None
     created_at: datetime
     predicted_pickup_time: datetime
-    items: List[OrderItem] = [] # Include items in the response
-    
+    token_number: Optional[int] = None
     class Config:
         orm_mode = True

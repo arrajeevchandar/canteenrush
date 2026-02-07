@@ -30,23 +30,3 @@ def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_item)
     return db_item
-
-@router.put("/{item_id}", response_model=schemas.MenuItem)
-def update_menu_item(item_id: int, item_update: schemas.MenuItemUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "vendor":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
-    if not db_item:
-        raise HTTPException(status_code=404, detail="Item not found")
-        
-    if db_item.vendor_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Cannot edit other vendor's items")
-    
-    update_data = item_update.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_item, key, value)
-        
-    db.commit()
-    db.refresh(db_item)
-    return db_item

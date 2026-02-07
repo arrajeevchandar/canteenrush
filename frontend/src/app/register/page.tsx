@@ -52,7 +52,7 @@ export default function RegisterPage() {
             <div className="w-full max-w-md animate-fade-in-up">
                 {/* Logo Section */}
                 <div className="text-center mb-10 space-y-4">
-                    <div className="inline-flex p-4 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-100 text-white mb-2">
+                    <div className="inline-flex p-4 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-200 text-white mb-2">
                         <UserPlus className="w-10 h-10" />
                     </div>
                     <h2 className="text-4xl font-black text-gray-900 tracking-tighter">

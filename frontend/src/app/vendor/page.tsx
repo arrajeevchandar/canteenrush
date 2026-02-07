@@ -19,7 +19,8 @@ import {
     RefreshCw,
     TrendingUp,
     Store,
-    Users
+    Users,
+    Image as ImageIcon
 } from 'lucide-react';
 
 interface Order {
@@ -39,6 +40,7 @@ interface MenuItem {
     description: string;
     prep_time_estimate: number;
     is_available: boolean;
+    image_url?: string;
 }
 
 export default function VendorDashboard() {
@@ -166,7 +168,7 @@ export default function VendorDashboard() {
     function onScanFailure(error: any) { }
 
     // Item Creation State
-    const [newItem, setNewItem] = useState({ name: '', price: 0, description: '', prep_time_estimate: 10 });
+    const [newItem, setNewItem] = useState({ name: '', price: 0, description: '', prep_time_estimate: 10, image_url: '' });
     const [message, setMessage] = useState('');
 
     const handleCreateItem = async (e: React.FormEvent) => {
@@ -174,7 +176,7 @@ export default function VendorDashboard() {
         try {
             await createMenuItem(newItem);
             setMessage('Item created successfully! ✨');
-            setNewItem({ name: '', price: 0, description: '', prep_time_estimate: 10 });
+            setNewItem({ name: '', price: 0, description: '', prep_time_estimate: 10, image_url: '' });
             loadMenu();
             setTimeout(() => setMessage(''), 3000);
         } catch (error) {
@@ -446,10 +448,22 @@ export default function VendorDashboard() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                            <ImageIcon className="w-3 h-3" />
+                                            Image URL 🔗
+                                        </label>
+                                        <input
+                                            placeholder="https://example.com/food.jpg"
+                                            className="w-full bg-gray-50 border-2 border-gray-100 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-bold placeholder:font-medium text-xs"
+                                            value={newItem.image_url}
+                                            onChange={e => setNewItem({ ...newItem, image_url: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Description 📝</label>
                                         <textarea
                                             placeholder="Brief description of the item..."
-                                            rows={3}
+                                            rows={2}
                                             className="w-full bg-gray-50 border-2 border-gray-100 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold transition-all placeholder:font-medium"
                                             value={newItem.description}
                                             onChange={e => setNewItem({ ...newItem, description: e.target.value })}
@@ -478,8 +492,12 @@ export default function VendorDashboard() {
                                     {menuItems.map(item => (
                                         <li key={item.id} className="p-6 hover:bg-white/40 transition-all flex items-center justify-between group">
                                             <div className="flex items-center gap-6">
-                                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:rotate-6 ${item.is_available ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-100 text-gray-400 grayscale'}`}>
-                                                    <Utensils className="w-8 h-8" />
+                                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:rotate-6 overflow-hidden ${item.is_available ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-100 text-gray-400 grayscale'}`}>
+                                                    {item.image_url ? (
+                                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Utensils className="w-8 h-8" />
+                                                    )}
                                                 </div>
                                                 <div className="space-y-1">
                                                     <p className={`text-lg font-black tracking-tight ${!item.is_available ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{item.name}</p>

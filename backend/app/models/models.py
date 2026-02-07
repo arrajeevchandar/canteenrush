@@ -24,6 +24,7 @@ class MenuItem(Base):
     prep_time_estimate = Column(Integer) # in minutes
     vendor_id = Column(Integer, index=True) # Could be a foreign key to a Vendor table if we had one
     is_available = Column(Boolean, default=True)
+    image_url = Column(String, default="https://placehold.co/400x300?text=Food")
 
 class Order(Base):
     __tablename__ = "orders"
